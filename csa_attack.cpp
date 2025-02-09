@@ -1,35 +1,37 @@
 #include "csa_attack.h"
 
 void usage() {
-    printf("syntax: ./csa <interface> <apMAC> [<StationMac>]\n");
-    printf("sample: ./csa wlan0 88:88:88:88:88:88 99:99:99:99:99:99\n");
+    printf("syntax: ./csa <interface> <ap mac> [<station mac>]\n");
+    printf("sample: ./csa mon0 01:23:45:67:89:AB 01:23:45:67:89:AB\n");
 }
 
-typedef struct {
-    char* dev_;
-} Param;
-
-Param param = {
-    .dev_ = NULL
-};
-
-bool parse(Param* param, int argc, char* argv[]) {
-    if (argc < 3) {
+bool parse(char** interface, char** ap_mac, char** station_mac, int argc, char* argv[]) {
+    if (argc < 3 || argc > 4) {
         usage();
         return false;
     }
-    param->dev_ = argv[1];
+    *interface = argv[1];
+    *ap_mac = argv[2];
+    if (argc == 4) {
+        *station_mac = argv[3];
+    } else {
+        *station_mac = nullptr;
+    }
     return true;
 }
 
 int main(int argc, char* argv[]) {
-    if (!parse(&param, argc, argv))
+    char* interface = nullptr;
+    char* ap_mac = nullptr;
+    char* station_mac = nullptr;
+
+    if (!parse(&interface, &ap_mac, &station_mac, argc, argv))
         return -1;
 
     char errbuf[PCAP_ERRBUF_SIZE];
-    pcap_t* pcap = pcap_open_live(param.dev_, BUFSIZ, 1, 1000, errbuf);
+    pcap_t* pcap = pcap_open_live(interface, BUFSIZ, 1, 1000, errbuf);
     if (pcap == NULL) {
-        fprintf(stderr, "pcap_open_live(%s) returned null - %s\n", param.dev_, errbuf);
+        fprintf(stderr, "pcap_open_live(%s) returned null - %s\n", interface, errbuf);
         return -1;
     }
 
@@ -43,16 +45,10 @@ int main(int argc, char* argv[]) {
             break;
         }
 
-        switch (argc) {
-            case 3:
-                broadcast(argv[1], packet, argv[2], header->caplen);
-                break;
-            case 4:
-                unicast(argv[1], packet, argv[2], header->caplen, argv[3]);
-                break;
-            default:
-                usage();
-                break;
+        if (station_mac != nullptr) {
+            unicast(interface, packet, ap_mac, header->caplen, station_mac);
+        } else {
+            broadcast(interface, packet, ap_mac, header->caplen);
         }
     }
 
