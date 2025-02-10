@@ -56,7 +56,7 @@ struct CSA {
     uint8_t tag_number = 0x25;
     uint8_t tag_len = 0x03;
     uint8_t channelswitch = 0x01;
-    uint8_t new_channel = 0x13;
+    uint8_t new_channel = 0x06;
     uint8_t channel_switch_count = 0x03;
 };
 
