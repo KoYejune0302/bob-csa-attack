@@ -80,14 +80,15 @@ void send_packet_with_inserted_csa(const std::string& dev, const u_char* packet,
         struct InfoElement* ie = (struct InfoElement*)(packet + offset);
         size_t next_offset = offset + 2 + ie->length;
         if (ie->id == 3 && ie->length == 1) {
-            channel = (ie->data[0]) * 2;
+            channel = (ie->data[0]);
+            // std::cerr << "Channel: " << (int)channel << std::endl;
         }
 
         if (next_offset < packet_len) {
             struct InfoElement* next_ie = (struct InfoElement*)(packet + next_offset);
             if (ie->id <= 0x25 && next_ie->id > 0x25) {
                 insert_position = next_offset;
-                csa_data.new_channel = (channel == 6) ? 11 : 6;
+                csa_data.new_channel = (channel + 6) % 13;
                 break;
             }
         }
